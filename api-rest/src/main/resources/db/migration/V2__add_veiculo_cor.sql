@@ -1,0 +1,1 @@
+ALTER TABLE conserto ADD COLUMN veiculo_cor VARCHAR(255);
