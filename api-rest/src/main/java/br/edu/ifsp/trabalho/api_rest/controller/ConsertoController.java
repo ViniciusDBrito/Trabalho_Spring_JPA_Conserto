@@ -26,10 +26,15 @@ public class ConsertoController {
     private ConsertoService service;
 
     @PostMapping
-    public ResponseEntity<Conserto> create(@Valid @RequestBody ConsertoRequestDto dto, UriComponentsBuilder uriBuilder) {
-        Conserto saved = service.create(dto);
-        URI uri = uriBuilder.path("/consertos/{id}").buildAndExpand(saved.getId()).toUri();
-        return ResponseEntity.created(uri).body(saved);
+    public ResponseEntity<?> create(@Valid @RequestBody ConsertoRequestDto dto, UriComponentsBuilder uriBuilder) {
+        try {
+            Conserto saved = service.create(dto);
+            URI uri = uriBuilder.path("/consertos/{id}").buildAndExpand(saved.getId()).toUri();
+            return ResponseEntity.created(uri).body(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("mensagem", "Erro ao registrar conserto."));
+        }
     }
 
     @GetMapping
@@ -61,16 +66,27 @@ public class ConsertoController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Conserto> partialUpdate(@PathVariable Long id, @Valid @RequestBody ConsertoUpdateDto dto) {
-        return service.updatePartial(id, dto)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<?> partialUpdate(@PathVariable Long id, @Valid @RequestBody ConsertoUpdateDto dto) {
+        try {
+            return service.updatePartial(id, dto)
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("mensagem", "Conserto com id " + id + " não encontrado.")));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("mensagem", "Erro ao atualizar conserto."));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> logicalDelete(@PathVariable Long id) {
+    public ResponseEntity<?> logicalDelete(@PathVariable Long id) {
         boolean ok = service.logicalDelete(id);
-        if (!ok) return ResponseEntity.notFound().build();
+
+        if (!ok) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("mensagem", "Conserto com id " + id + " não encontrado."));
+        }
+
         return ResponseEntity.noContent().build();
     }
 }
